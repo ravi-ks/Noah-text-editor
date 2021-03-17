@@ -8,7 +8,9 @@ import javax.swing.JOptionPane; //used for alert-message window feature
 import java.io.FileWriter; //file writer for save feature
 import java.lang.Thread;
 import java.util.Scanner;
-
+import javax.swing.text.Highlighter; //highlight search string
+import javax.swing.text.DefaultHighlighter;
+//import TextLineNumber; no need to import -- local class in same directory/package (I do not own TextLineNumber class -- borrowed from the internet )
 
 class launch implements ActionListener{
           JFrame frame;
@@ -16,8 +18,7 @@ class launch implements ActionListener{
           File thisFile; //current opened file object
           String textWhileSaving, currText; //temporary object to store text in text area - to manipulate unsaved changes
           JTextArea textArea;
-          JMenuItem New, Save, SaveAs, Open, Copy, Paste, Cut, SelectAll,FontStyle, FontSize, FontType;
-          JMenuItem Close;
+          JMenuItem New, Save, SaveAs, Open, Copy, Paste, Cut, SelectAll,FontStyle, FontSize, FontType, Quit, FindAndReplaceAll, FindAll, ClearHighlighted, ShortCuts, Doc;
           int doExit; //should the program terminate?; 1 if yes, 0 if no.
           boolean goTo__SaveAs = false; //wild card for the save function to escort the control to saveas whenever necessary
           boolean goTo__Save = false; //wild card to go to Save function (currently unused)
@@ -41,6 +42,8 @@ class launch implements ActionListener{
           Save = new JMenuItem("Save");
           SaveAs = new JMenuItem("Save As");
           Open = new JMenuItem("Open");
+          Quit = new JMenuItem("Quit");
+          Quit.addActionListener(this);
           SaveAs.addActionListener(this);
           Save.addActionListener(this);
           New.addActionListener(this);
@@ -49,6 +52,7 @@ class launch implements ActionListener{
           menu_file.add(Open);
           menu_file.add(Save);
           menu_file.add(SaveAs);
+          menu_file.add(Quit);
           mb.add(menu_file);
           
           JMenu menu_edit = new JMenu("Edit");
@@ -79,9 +83,26 @@ class launch implements ActionListener{
           menu_pref.add(FontStyle);
           mb.add(menu_pref);
           
-          Close = new JMenuItem("Close");
-          Close.addActionListener(this);
-          mb.add(Close);
+          JMenu menu_search = new JMenu("Search");
+          FindAll = new JMenuItem("Find all");
+          FindAndReplaceAll = new JMenuItem("Find and Replace all");
+          ClearHighlighted = new JMenuItem("Clear highlight on text");
+          FindAll.addActionListener(this);
+          FindAndReplaceAll.addActionListener(this);
+          ClearHighlighted.addActionListener(this);
+          menu_search.add(FindAll);
+          menu_search.add(FindAndReplaceAll);
+          menu_search.add(ClearHighlighted);          
+          mb.add(menu_search);
+          
+          JMenu menu_help = new JMenu("Help");
+          ShortCuts = new JMenuItem("Keyboard Shortcuts");
+          Doc = new JMenuItem("Noah Documentation");
+          ShortCuts.addActionListener(this);
+          Doc.addActionListener(this);
+          menu_help.add(ShortCuts);
+          menu_help.add(Doc);
+          mb.add(menu_help);
           frame.setJMenuBar(mb);
           //menu bar ends
 
@@ -129,15 +150,28 @@ class launch implements ActionListener{
           JScrollPane scroll = new JScrollPane(textArea);
           scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
           
+          TextLineNumber lineNumber = new TextLineNumber(textArea);
+          scroll.setRowHeaderView(lineNumber);
+          
           frame.add(scroll);
           frame.setVisible(true); 
           
           //add keyListener to listen to ctrl+s (save command)
           textArea.addKeyListener(new java.awt.event.KeyAdapter() {
+                    @Override
                     public void keyPressed(java.awt.event.KeyEvent evt) {
                               if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_S){
                                         Save.doClick(); //stimulate Save event on incurring ctrl+s
-                                        }
+                              }
+                              else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_F){
+                                        FindAll.doClick(); //stimulate FindAll event on incurring ctrl+f
+                              }
+                              else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_H){
+                                        FindAndReplaceAll.doClick(); //stimulate findAndReplaceAll event on incurring ctrl+h
+                              }
+                              else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_W){
+                                        Quit.doClick(); //override (system) close event on incurring ctrl+x
+                              }
                     }
                });
                
@@ -154,7 +188,7 @@ class launch implements ActionListener{
           else if(e.getSource() == SelectAll)    
                     textArea.selectAll();  
           
-          if(e.getSource() == New){
+          else if(e.getSource() == New){
                     int abortNew = 0;
                     if(unsaved == true && frame.getTitle().length() > 12){ //if saveas is done, but file unsaved
                               int confirmStatus = confirmMessageAlert("Unsaved changes found, save file?");
@@ -207,7 +241,7 @@ class launch implements ActionListener{
                     goTo__SaveAs = false; //disable wild card   
                }
                
-               if(e.getSource() == Open){
+               else if(e.getSource() == Open){
                     int goFlag = 1; //this flag is 1 if Open option has to be performed, else 0
                     if(unsaved){ //if current file unsaved, notify to either continue without saving or satying.
                               int confirmStatus = confirmMessageAlert("Current opened file unsaved. Continue without saving?"); 
@@ -242,7 +276,7 @@ class launch implements ActionListener{
                     }
                }
                
-               if(e.getSource() == FontSize){
+               else if(e.getSource() == FontSize){
                     Integer fontSizes[] = new Integer[91];
                     for(int i = 0; i < 91; i++)
                               fontSizes[i] = i + 10; //font sizes ranges from 10-100
@@ -254,7 +288,7 @@ class launch implements ActionListener{
                     textArea.setFont(new Font(currFontStyle, currFontType, currFontSize)); //update preference
                }
                
-               if(e.getSource() == FontType){
+               else if(e.getSource() == FontType){
                     String fontTypes[] = {"PLAIN", "BOLD", "ITALIC", "BOLD-ITALIC"};
                     JComboBox fontTypeList = new JComboBox(fontTypes);
                     fontTypeList.setSelectedItem(selectedFontType);
@@ -273,7 +307,7 @@ class launch implements ActionListener{
                     textArea.setFont(new Font(currFontStyle, currFontType, currFontSize)); //update preference
                }
                
-               if(e.getSource() == FontStyle){
+               else if(e.getSource() == FontStyle){
                     String fontStyles[] = {"Times New Roman", "SansSerif", "Monospaced", "Serif"};
                     JComboBox fontStyleList = new JComboBox(fontStyles);
                     fontStyleList.setSelectedItem(selectedFontStyle); //the arg must be a object not a str or int. So did this.
@@ -283,16 +317,64 @@ class launch implements ActionListener{
                     textArea.setFont(new Font(currFontStyle, currFontType, currFontSize)); //update preference
                }
                
-               if(e.getSource() == Close){
+               else if(e.getSource() == Quit){
                doExit = 1;
                     if(unsaved){
-                              int confirmStatus = confirmMessageAlert("Unsaved changes found. Close without saving?");
+                              int confirmStatus = confirmMessageAlert("Unsaved changes found. Quit without saving?");
                               if(confirmStatus == JOptionPane.NO_OPTION)
                                         doExit = 0;           
                     }
                     if(doExit == 1)
                               frame.dispose(); //close window
                               
+               }
+               
+               else if(e.getSource() == FindAll){
+               try{
+                    String textAreaAsString = textArea.getText();
+                    int textAreaLen = textAreaAsString.length();
+                    String textToFind = JOptionPane.showInputDialog(frame, "Enter text to find", "Find All", JOptionPane.INFORMATION_MESSAGE);
+                    int textToFindLen = textToFind.length();
+                    if(textToFindLen > 0 && textAreaLen > 0){//textarea and string to search is not empty
+                              int highlight_startIndex, indexOf_startPoint = 0; //more than one occurance can be highlighted now
+                              Highlighter h = textArea.getHighlighter();
+                              h.removeAllHighlights();
+                              while((highlight_startIndex = textAreaAsString.indexOf(textToFind, indexOf_startPoint)) != -1){
+                                        h.addHighlight(highlight_startIndex, highlight_startIndex + textToFindLen, DefaultHighlighter.DefaultPainter);
+                                        indexOf_startPoint = highlight_startIndex + textToFindLen + 1; //probe next occurance from point beyond.
+                              }
+                    }
+                    }
+                    catch(Exception eeee){
+                              //do nothing when cancel is pressed in FindAll input window
+                    }                
+                                   
+               }
+               
+               else if(e.getSource() == ClearHighlighted){
+                    Highlighter h = textArea.getHighlighter();
+                    h.removeAllHighlights();
+               }
+               
+               else if(e.getSource() == FindAndReplaceAll){
+                    JTextField textToFind = new JTextField();
+                    JTextField textToReplace = new JTextField();
+                    Object[] encapsulatedTextFields = {
+                              "Enter text to find", textToFind,
+                              "Enter text to replace", textToReplace
+                    };
+                    int status = JOptionPane.showConfirmDialog(frame, encapsulatedTextFields, "Find and Replace All", JOptionPane.OK_CANCEL_OPTION);
+                    if(status == JOptionPane.OK_OPTION && textToFind.getText().length() > 0){
+                              textArea.setText(textArea.getText().replaceAll(textToFind.getText(), textToReplace.getText()));
+                    }
+               }
+               
+               else if(e.getSource() == ShortCuts){
+                    alert("save: ctrl+s \n find (all): ctrl+f \n find and replace (all): ctrl+h \n quit: ctrl+w \n select all: ctrl+a", ": Keyboard Shortcuts premitive to Noah");
+               }
+               
+               else if(e.getSource() == Doc){
+                    alert("Coming Soon...", ": Noah Documentation");
                }
                     
           }
@@ -336,7 +418,6 @@ class launch implements ActionListener{
                               
           }     
 }
-
 
 
 public class Noah{

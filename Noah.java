@@ -10,8 +10,7 @@ import java.lang.Thread;
 import java.util.Scanner;
 import javax.swing.text.Highlighter; //highlight search string
 import javax.swing.text.DefaultHighlighter;
-//import TextLineNumber; no need to import -- local class in same directory/package (I do not own TextLineNumber class -- borrowed from the internet )
-
+//import TextLineNumber; (no need to import -- local class in same directory/package (I do not own TextLineNumber class -- borrowed from the internet))
 class launch implements ActionListener{
           JFrame frame;
           boolean unsaved; //checks if current file has unsaved changes
